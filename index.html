@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Blecket</title>
+    <title>TokenDB</title>
     <link rel="icon" type="image/x-icon" href="https://www.blooket.com/favicon.ico">
     <link href="https://fonts.googleapis.com/css?family=Nunito:700,400&display=swap" rel="stylesheet">
     <style>
@@ -793,7 +793,7 @@
     <div class="overlay no-close active" id="authOverlay">
         <div class="auth-modal">
             <div id="loginView">
-                <h2>Welcome to Blecket!</h2>
+                <h2>Welcome to TokenDB!</h2>
                 <p style="margin-bottom: 20px; color: #666;">Login or create an account</p>
                 <input type="text" id="loginUsername" placeholder="Username">
                 <input type="password" id="loginPassword" placeholder="Password">
@@ -824,10 +824,6 @@
                     <span class="profile-info-value" id="profileUsername"></span>
                 </div>
                 <div class="profile-info-item">
-                    <span class="profile-info-label">Account Created:</span>
-                    <span class="profile-info-value" id="profileCreated"></span>
-                </div>
-                <div class="profile-info-item">
                     <span class="profile-info-label">Current Tokens:</span>
                     <span class="profile-info-value" id="profileTokens">0</span>
                 </div>
@@ -837,7 +833,6 @@
                 </div>
             </div>
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px; width: 100%;">
-                <button class="btn-secondary" style="flex: 1; margin: 0;" onclick="confirmResetAccount()">Reset Account</button>
                 <button class="btn-primary" style="flex: 1; margin: 0; display: none;" onclick="logout()" id="logoutBtn">Logout</button>
             </div>
         </div>
@@ -873,68 +868,75 @@
         </div>
     </div>
     
-    <div class="overlay" id="resetOverlay" onclick="closeResetConfirmation()">
-        <div class="logout-modal" onclick="event.stopPropagation()">
-            <h2>Reset Account</h2>
-            <p>Are you sure you want to reset your account? This will delete all your tokens and collected cards. This action cannot be undone.</p>
-            <div class="confirm-buttons">
-                <button class="confirm-btn no" onclick="closeResetConfirmation()">Cancel</button>
-                <button class="confirm-btn yes" onclick="resetAccount()">Reset Account</button>
-            </div>
-        </div>
-    </div>
-    
     <div class="overlay" id="adminOverlay">
         <div class="popup-modal">
             <span class="close-x" onclick="closeAdminPopup()">&times;</span>
             <div id="adminLogin">
                 <h3>Admin Login</h3>
                 <input type="password" id="adminPwd" placeholder="Enter password">
-                <button onclick="adminLogin()">Login</button>
+                <button class="btn-primary" onclick="adminLogin()">Login</button>
                 <div id="adminError"></div>
             </div>
             <div id="adminPanel" style="display:none;">
                 <h3>Admin Panel</h3>
                 <input type="number" id="tokenInput" placeholder="Set token amount">
-                <button onclick="setTokens()">Set Tokens</button>
-                <button id="unlockBtn" onclick="toggleAllCards()">Unlock All Cards</button>
+                <button class="btn-primary" onclick="setTokens()">Set Tokens</button>
+                <button class="btn-secondary" id="unlockBtn" onclick="toggleAllCards()">Unlock All Cards</button>
                 <div id="adminStatus"></div>
             </div>
         </div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+      
+        const firebaseConfig = {
+          apiKey: "AIzaSyAV0RyKWL7-LUzN9aTXM82j9Or7Ynipj6Q",
+          authDomain: "tokendb-df576.firebaseapp.com",
+          projectId: "tokendb-df576",
+          storageBucket: "tokendb-df576.firebasestorage.app",
+          messagingSenderId: "559492962234",
+          appId: "1:559492962234:web:30e8331ba8bb257d332f83",
+          measurementId: "G-817X9SXYBS"
+        };
+      
+        const app = initializeApp(firebaseConfig);
+        window.auth = getAuth(app);
+        window.db = getFirestore(app);
+        window.fbAuth = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+        window.fbDb = { doc, setDoc, getDoc, updateDoc };
+
+        // Auto-login listener (keeps user logged in on page refresh)
+        window.fbAuth.onAuthStateChanged(window.auth, async (user) => {
+            if (user) {
+                window.currentUserId = user.uid;
+                const docSnap = await window.fbDb.getDoc(window.fbDb.doc(window.db, "users", user.uid));
+                if (docSnap.exists()) {
+                    window.currentUser = docSnap.data().username;
+                    await loadUserData();
+                    document.getElementById('authOverlay').classList.remove('active');
+                    updateProfilePicture();
+                }
+            }
+        });
+    </script>
     
     <script>
         const packBlocks = {"Aquatic Pack":[{name:"Jellyfish",rarity:"Common"},{name:"Clownfish",rarity:"Common"},{name:"Starfish",rarity:"Common"},{name:"Seahorse",rarity:"Common"},{name:"Shrimp",rarity:"Common"},{name:"Crab",rarity:"Common"},{name:"Frog",rarity:"Uncommon"},{name:"Pufferfish",rarity:"Uncommon"},{name:"Angelfish",rarity:"Uncommon"},{name:"Stingray",rarity:"Uncommon"},{name:"Lobster",rarity:"Uncommon"},{name:"Squid",rarity:"Uncommon"},{name:"Octopus",rarity:"Rare"},{name:"Narwhal",rarity:"Rare"},{name:"Sea Turtle",rarity:"Rare"},{name:"Orca",rarity:"Rare"},{name:"Manta Ray",rarity:"Rare"},{name:"Electric Eel",rarity:"Rare"},{name:"Megalodon",rarity:"Epic"},{name:"Baby Shark",rarity:"Epic"},{name:"Hammerhead",rarity:"Epic"},{name:"Great White Shark",rarity:"Epic"},{name:"Kraken",rarity:"Legendary"},{name:"Blue Whale",rarity:"Legendary"},{name:"Leviathan",rarity:"Legendary"},{name:"Poseidon's Trident",rarity:"Mythic"},{name:"Pearl Dragon",rarity:"Mythic"},{name:"Neptune's Crown",rarity:"Mythic"},{name:"Prismatic Dolphin",rarity:"Chroma"},{name:"Crystal Jellyfish",rarity:"Chroma"},{name:"Rainbow Coral",rarity:"Chroma"},{name:"Eternal Tide",rarity:"Immortal"},{name:"Ocean Sovereign",rarity:"Godly"},{name:"Void Leviathan",rarity:"Abyssal"}],"Blizzard Pack":[{name:"Snowman",rarity:"Common"},{name:"Penguin",rarity:"Common"},{name:"Snow Owl",rarity:"Common"},{name:"Ice Cube",rarity:"Common"},{name:"Snowflake",rarity:"Common"},{name:"Icicle",rarity:"Common"},{name:"Snow Leopard",rarity:"Uncommon"},{name:"Arctic Fox",rarity:"Uncommon"},{name:"Seal",rarity:"Uncommon"},{name:"Husky",rarity:"Uncommon"},{name:"Reindeer",rarity:"Uncommon"},{name:"Arctic Hare",rarity:"Uncommon"},{name:"Polar Bear",rarity:"Rare"},{name:"Ice Slime",rarity:"Rare"},{name:"Walrus",rarity:"Rare"},{name:"Snow Tiger",rarity:"Rare"},{name:"Snowy Owl",rarity:"Rare"},{name:"Frost Wolf",rarity:"Rare"},{name:"Yeti",rarity:"Epic"},{name:"Frost Wraith",rarity:"Epic"},{name:"Ice Dragon",rarity:"Epic"},{name:"Blizzard Golem",rarity:"Epic"},{name:"Ice Elemental",rarity:"Legendary"},{name:"Blizzard Beast",rarity:"Legendary"},{name:"Frost Giant",rarity:"Legendary"},{name:"Frozen Phoenix",rarity:"Mythic"},{name:"Crystal Heart",rarity:"Mythic"},{name:"Ice Scepter",rarity:"Mythic"},{name:"Aurora Spirit",rarity:"Chroma"},{name:"Diamond Snowflake",rarity:"Chroma"},{name:"Frozen Rainbow",rarity:"Chroma"},{name:"Eternal Frost",rarity:"Immortal"},{name:"Winter God",rarity:"Godly"},{name:"Black Ice Demon",rarity:"Abyssal"}],"Bot Pack":[{name:"Rusty Robot",rarity:"Common"},{name:"Old PC",rarity:"Common"},{name:"Calculator",rarity:"Common"},{name:"Floppy Disk",rarity:"Common"},{name:"USB Drive",rarity:"Common"},{name:"Circuit Board",rarity:"Common"},{name:"Laptop",rarity:"Uncommon"},{name:"Rocket Bot",rarity:"Uncommon"},{name:"Drone",rarity:"Uncommon"},{name:"Smart Watch",rarity:"Uncommon"},{name:"Tablet",rarity:"Uncommon"},{name:"VR Headset",rarity:"Uncommon"},{name:"Mega Bot",rarity:"Rare"},{name:"Cyber Dog",rarity:"Rare"},{name:"Robot Arm",rarity:"Rare"},{name:"Security Bot",rarity:"Rare"},{name:"Nano Bot",rarity:"Rare"},{name:"Tech Spider",rarity:"Rare"},{name:"AI Core",rarity:"Epic"},{name:"Holo Bot",rarity:"Epic"},{name:"Combat Mech",rarity:"Epic"},{name:"Battle Droid",rarity:"Epic"},{name:"Tim the Alien",rarity:"Legendary"},{name:"Neural Network",rarity:"Legendary"},{name:"Cyborg",rarity:"Legendary"},{name:"Quantum Processor",rarity:"Mythic"},{name:"Singularity Core",rarity:"Mythic"},{name:"Binary Blade",rarity:"Mythic"},{name:"Neon Mech",rarity:"Chroma"},{name:"Holographic AI",rarity:"Chroma"},{name:"Digital Phoenix",rarity:"Chroma"},{name:"Prime Sentinel",rarity:"Immortal"},{name:"Tech Deity",rarity:"Godly"},{name:"Void Machine",rarity:"Abyssal"}],"Breakfast Pack":[{name:"Toast",rarity:"Common"},{name:"Cereal",rarity:"Common"},{name:"Egg",rarity:"Common"},{name:"Bagel",rarity:"Common"},{name:"Butter",rarity:"Common"},{name:"Jam",rarity:"Common"},{name:"Waffle",rarity:"Uncommon"},{name:"Bacon",rarity:"Uncommon"},{name:"Donut",rarity:"Uncommon"},{name:"Croissant",rarity:"Uncommon"},{name:"Sausage",rarity:"Uncommon"},{name:"Hash Brown",rarity:"Uncommon"},{name:"Pancakes",rarity:"Rare"},{name:"French Toast",rarity:"Rare"},{name:"Muffin",rarity:"Rare"},{name:"Coffee",rarity:"Rare"},{name:"Smoothie",rarity:"Rare"},{name:"Yogurt Parfait",rarity:"Rare"},{name:"Omelet",rarity:"Epic"},{name:"Orange Juice",rarity:"Epic"},{name:"Avocado Toast",rarity:"Epic"},{name:"Eggs Benedict",rarity:"Epic"},{name:"Lucky Cat",rarity:"Legendary"},{name:"Breakfast Burrito",rarity:"Legendary"},{name:"Grand Slam",rarity:"Legendary"},{name:"Golden Syrup",rarity:"Mythic"},{name:"Maple Leaf Spirit",rarity:"Mythic"},{name:"Divine Breakfast",rarity:"Mythic"},{name:"Rainbow Pancake",rarity:"Chroma"},{name:"Crystal Honey",rarity:"Chroma"},{name:"Prismatic Waffle",rarity:"Chroma"},{name:"Infinite Buffet",rarity:"Immortal"},{name:"Breakfast Lord",rarity:"Godly"},{name:"Burnt Shadow",rarity:"Abyssal"}],"Safari Pack":[{name:"Zebra",rarity:"Common"},{name:"Giraffe",rarity:"Common"},{name:"Meerkat",rarity:"Common"},{name:"Gazelle",rarity:"Common"},{name:"Ostrich",rarity:"Common"},{name:"Wildebeest",rarity:"Common"},{name:"Rhino",rarity:"Uncommon"},{name:"Hippo",rarity:"Uncommon"},{name:"Warthog",rarity:"Uncommon"},{name:"Hyena",rarity:"Uncommon"},{name:"Baboon",rarity:"Uncommon"},{name:"Mongoose",rarity:"Uncommon"},{name:"Elephant",rarity:"Rare"},{name:"Cheetah",rarity:"Rare"},{name:"Leopard",rarity:"Rare"},{name:"Cape Buffalo",rarity:"Rare"},{name:"African Wild Dog",rarity:"Rare"},{name:"Black Panther",rarity:"Rare"},{name:"Lion",rarity:"Epic"},{name:"Gorilla",rarity:"Epic"},{name:"Crocodile",rarity:"Epic"},{name:"Silverback",rarity:"Epic"},{name:"King of the Jungle",rarity:"Legendary"},{name:"White Lion",rarity:"Legendary"},{name:"Alpha Elephant",rarity:"Legendary"},{name:"Sacred Elephant",rarity:"Mythic"},{name:"Ivory Guardian",rarity:"Mythic"},{name:"Tribal Mask",rarity:"Mythic"},{name:"Spectrum Tiger",rarity:"Chroma"},{name:"Golden Savanna",rarity:"Chroma"},{name:"Rainbow Zebra",rarity:"Chroma"},{name:"Ancient Mammoth",rarity:"Immortal"},{name:"Savanna God",rarity:"Godly"},{name:"Shadow Predator",rarity:"Abyssal"}],"Medieval Pack":[{name:"Peasant",rarity:"Common"},{name:"Squire",rarity:"Common"},{name:"Blacksmith",rarity:"Common"},{name:"Bard",rarity:"Common"},{name:"Knight",rarity:"Uncommon"},{name:"Archer",rarity:"Uncommon"},{name:"Monk",rarity:"Uncommon"},{name:"Guard",rarity:"Uncommon"},{name:"Wizard",rarity:"Rare"},{name:"Jester",rarity:"Rare"},{name:"Noble",rarity:"Rare"},{name:"Paladin",rarity:"Rare"},{name:"Queen",rarity:"Epic"},{name:"Dragon Knight",rarity:"Epic"},{name:"Dark Sorcerer",rarity:"Epic"},{name:"King",rarity:"Legendary"},{name:"Royal Guard",rarity:"Legendary"},{name:"Excalibur",rarity:"Mythic"},{name:"Crown of Light",rarity:"Mythic"},{name:"Crystal Paladin",rarity:"Chroma"},{name:"Rainbow Knight",rarity:"Chroma"},{name:"Eternal Crusader",rarity:"Immortal"},{name:"Divine Emperor",rarity:"Godly"},{name:"Dark Warlord",rarity:"Abyssal"}],"Space Pack":[{name:"Asteroid",rarity:"Common"},{name:"Satellite",rarity:"Common"},{name:"Moon Rock",rarity:"Common"},{name:"Comet",rarity:"Common"},{name:"Astronaut",rarity:"Uncommon"},{name:"UFO",rarity:"Uncommon"},{name:"Space Probe",rarity:"Uncommon"},{name:"Rocket",rarity:"Uncommon"},{name:"Space Ranger",rarity:"Rare"},{name:"Mars Rover",rarity:"Rare"},{name:"Solar Panel",rarity:"Rare"},{name:"Star Navigator",rarity:"Rare"},{name:"Alien",rarity:"Epic"},{name:"Planet",rarity:"Epic"},{name:"Nebula Explorer",rarity:"Epic"},{name:"Black Hole",rarity:"Legendary"},{name:"Quasar",rarity:"Legendary"},{name:"Supernova Core",rarity:"Mythic"},{name:"Galactic Crown",rarity:"Mythic"},{name:"Cosmic Prism",rarity:"Chroma"},{name:"Aurora Nebula",rarity:"Chroma"},{name:"Starforged Titan",rarity:"Immortal"},{name:"Celestial Being",rarity:"Godly"},{name:"Void of Space",rarity:"Abyssal"}],"Wonderland Pack":[{name:"White Rabbit",rarity:"Common"},{name:"Caterpillar",rarity:"Common"},{name:"Teacup",rarity:"Common"},{name:"Playing Card",rarity:"Common"},{name:"Cheshire Cat",rarity:"Uncommon"},{name:"Mad Hatter",rarity:"Uncommon"},{name:"March Hare",rarity:"Uncommon"},{name:"Dormouse",rarity:"Uncommon"},{name:"Tweedle Dee",rarity:"Rare"},{name:"Tweedle Dum",rarity:"Rare"},{name:"Flamingo",rarity:"Rare"},{name:"Mock Turtle",rarity:"Rare"},{name:"Queen of Hearts",rarity:"Epic"},{name:"Alice",rarity:"Epic"},{name:"Red Queen",rarity:"Epic"},{name:"Time Keeper",rarity:"Legendary"},{name:"Bandersnatch",rarity:"Legendary"},{name:"Jabberwocky",rarity:"Mythic"},{name:"Vorpal Blade",rarity:"Mythic"},{name:"Kaleidoscope Rabbit",rarity:"Chroma"},{name:"Rainbow Tea Party",rarity:"Chroma"},{name:"Forever Alice",rarity:"Immortal"},{name:"Wonderland Deity",rarity:"Godly"},{name:"Nightmare Realm",rarity:"Abyssal"}],"Dino Pack":[{name:"Fossil",rarity:"Common"},{name:"Egg",rarity:"Common"},{name:"Dino Bone",rarity:"Common"},{name:"Baby Raptor",rarity:"Common"},{name:"Velociraptor",rarity:"Uncommon"},{name:"Stegosaurus",rarity:"Uncommon"},{name:"Ankylosaurus",rarity:"Uncommon"},{name:"Parasaurolophus",rarity:"Uncommon"},{name:"Triceratops",rarity:"Rare"},{name:"Brontosaurus",rarity:"Rare"},{name:"Allosaurus",rarity:"Rare"},{name:"Carnotaurus",rarity:"Rare"},{name:"Pterodactyl",rarity:"Epic"},{name:"Spinosaurus",rarity:"Epic"},{name:"Mosasaurus",rarity:"Epic"},{name:"Tyrannosaurus Rex",rarity:"Legendary"},{name:"Indominus Rex",rarity:"Legendary"},{name:"Alpha Raptor",rarity:"Mythic"},{name:"Fossil King",rarity:"Mythic"},{name:"Prism Rex",rarity:"Chroma"},{name:"Rainbow Dino",rarity:"Chroma"},{name:"Prehistoric Titan",rarity:"Immortal"},{name:"Dino Overlord",rarity:"Godly"},{name:"Extinction Beast",rarity:"Abyssal"}],"Spooky Pack":[{name:"Pumpkin",rarity:"Common"},{name:"Bat",rarity:"Common"},{name:"Black Cat",rarity:"Common"},{name:"Spider",rarity:"Common"},{name:"Ghost",rarity:"Uncommon"},{name:"Skeleton",rarity:"Uncommon"},{name:"Scarecrow",rarity:"Uncommon"},{name:"Mummy",rarity:"Uncommon"},{name:"Witch",rarity:"Rare"},{name:"Zombie",rarity:"Rare"},{name:"Frankenstein",rarity:"Rare"},{name:"Haunted House",rarity:"Rare"},{name:"Vampire",rarity:"Epic"},{name:"Werewolf",rarity:"Epic"},{name:"Headless Horseman",rarity:"Epic"},{name:"Grim Reaper",rarity:"Legendary"},{name:"Demon",rarity:"Legendary"},{name:"Phantom King",rarity:"Mythic"},{name:"Soul Keeper",rarity:"Mythic"},{name:"Spectral Wraith",rarity:"Chroma"},{name:"Ghost Flame",rarity:"Chroma"},{name:"Undead Lord",rarity:"Immortal"},{name:"Death God",rarity:"Godly"},{name:"Absolute Darkness",rarity:"Abyssal"}],"Outback Pack":[{name:"Dingo",rarity:"Common"},{name:"Wombat",rarity:"Common"},{name:"Echidna",rarity:"Common"},{name:"Kookaburra",rarity:"Common"},{name:"Emu",rarity:"Uncommon"},{name:"Platypus",rarity:"Uncommon"},{name:"Wallaby",rarity:"Uncommon"},{name:"Frilled Lizard",rarity:"Uncommon"},{name:"Koala",rarity:"Rare"},{name:"Tasmanian Devil",rarity:"Rare"},{name:"Cassowary",rarity:"Rare"},{name:"Sugar Glider",rarity:"Rare"},{name:"Crocodile",rarity:"Epic"},{name:"Kangaroo",rarity:"Epic"},{name:"Saltwater Croc",rarity:"Epic"},{name:"Drop Bear",rarity:"Legendary"},{name:"Dingo Alpha",rarity:"Legendary"},{name:"Dreamtime Serpent",rarity:"Mythic"},{name:"Boomerang Spirit",rarity:"Mythic"},{name:"Opal Kangaroo",rarity:"Chroma"},{name:"Rainbow Serpent",rarity:"Chroma"},{name:"Ancient Bunyip",rarity:"Immortal"},{name:"Outback Deity",rarity:"Godly"},{name:"Void Dingo",rarity:"Abyssal"}],"Pirate Pack":[{name:"Cabin Boy",rarity:"Common"},{name:"Sailor",rarity:"Common"},{name:"Deckhand",rarity:"Common"},{name:"Ship's Cook",rarity:"Common"},{name:"Pirate",rarity:"Uncommon"},{name:"Parrot",rarity:"Uncommon"},{name:"Navigator",rarity:"Uncommon"},{name:"Powder Monkey",rarity:"Uncommon"},{name:"Treasure Chest",rarity:"Rare"},{name:"First Mate",rarity:"Rare"},{name:"Cannon Master",rarity:"Rare"},{name:"Buccaneer",rarity:"Rare"},{name:"Pirate Ship",rarity:"Epic"},{name:"Kraken Hunter",rarity:"Epic"},{name:"Ghost Ship",rarity:"Epic"},{name:"Pirate King",rarity:"Legendary"},{name:"Admiral",rarity:"Legendary"},{name:"Cursed Treasure",rarity:"Mythic"},{name:"Black Pearl",rarity:"Mythic"},{name:"Jeweled Galleon",rarity:"Chroma"},{name:"Golden Compass",rarity:"Chroma"},{name:"Flying Dutchman",rarity:"Immortal"},{name:"Sea God",rarity:"Godly"},{name:"Abyssal Corsair",rarity:"Abyssal"}],"Tropical Pack":[{name:"Coconut",rarity:"Common"},{name:"Pineapple",rarity:"Common"},{name:"Palm Tree",rarity:"Common"},{name:"Hibiscus",rarity:"Common"},{name:"Toucan",rarity:"Uncommon"},{name:"Flamingo",rarity:"Uncommon"},{name:"Tree Frog",rarity:"Uncommon"},{name:"Chameleon",rarity:"Uncommon"},{name:"Monkey",rarity:"Rare"},{name:"Jaguar",rarity:"Rare"},{name:"Sloth",rarity:"Rare"},{name:"Anaconda",rarity:"Rare"},{name:"Tiki Mask",rarity:"Epic"},{name:"Parrot",rarity:"Epic"},{name:"Volcano Spirit",rarity:"Epic"},{name:"Island Spirit",rarity:"Legendary"},{name:"Beach Guardian",rarity:"Legendary"},{name:"Golden Tiki",rarity:"Mythic"},{name:"Tropical Crown",rarity:"Mythic"},{name:"Rainbow Macaw",rarity:"Chroma"},{name:"Sunset Paradise",rarity:"Chroma"},{name:"Eternal Paradise",rarity:"Immortal"},{name:"Jungle God",rarity:"Godly"},{name:"Shadow Rainforest",rarity:"Abyssal"}],"Candy Pack":[{name:"Gummy Bear",rarity:"Common"},{name:"Lollipop",rarity:"Common"},{name:"Jawbreaker",rarity:"Common"},{name:"Cotton Candy",rarity:"Common"},{name:"Chocolate Bar",rarity:"Uncommon"},{name:"Candy Cane",rarity:"Uncommon"},{name:"Taffy",rarity:"Uncommon"},{name:"Jelly Bean",rarity:"Uncommon"},{name:"Cupcake",rarity:"Rare"},{name:"Ice Cream",rarity:"Rare"},{name:"Macaron",rarity:"Rare"},{name:"Fudge",rarity:"Rare"},{name:"Birthday Cake",rarity:"Epic"},{name:"Rainbow Candy",rarity:"Epic"},{name:"Chocolate Fountain",rarity:"Epic"},{name:"Unicorn Swirl",rarity:"Legendary"},{name:"Candy Castle",rarity:"Legendary"},{name:"Enchanted Candy",rarity:"Mythic"},{name:"Sweet Dream",rarity:"Mythic"},{name:"Hypnotic Swirl",rarity:"Chroma"},{name:"Prismatic Sugar",rarity:"Chroma"},{name:"Everlasting Gobstopper",rarity:"Immortal"},{name:"Sugar Deity",rarity:"Godly"},{name:"Dark Chocolate Void",rarity:"Abyssal"}],"Fantasy Pack":[{name:"Fairy",rarity:"Common"},{name:"Elf",rarity:"Common"},{name:"Pixie",rarity:"Common"},{name:"Sprite",rarity:"Common"},{name:"Dwarf",rarity:"Uncommon"},{name:"Centaur",rarity:"Uncommon"},{name:"Gnome",rarity:"Uncommon"},{name:"Nymph",rarity:"Uncommon"},{name:"Griffin",rarity:"Rare"},{name:"Wizard",rarity:"Rare"},{name:"Pegasus",rarity:"Rare"},{name:"Minotaur",rarity:"Rare"},{name:"Unicorn",rarity:"Epic"},{name:"Phoenix",rarity:"Epic"},{name:"Hydra",rarity:"Epic"},{name:"Dragon",rarity:"Legendary"},{name:"Wyvern",rarity:"Legendary"},{name:"Ancient Dragon",rarity:"Mythic"},{name:"Dragon's Eye",rarity:"Mythic"},{name:"Celestial Phoenix",rarity:"Chroma"},{name:"Rainbow Unicorn",rarity:"Chroma"},{name:"Immortal Sorcerer",rarity:"Immortal"},{name:"Creator Dragon",rarity:"Godly"},{name:"Void Dragon",rarity:"Abyssal"}]};
          const chances = {Abyssal:0.1,Godly:0.3,Immortal:0.5,Chroma:0.7,Mythic:0.9,Legendary:1,Epic:3,Rare:8,Uncommon:18,Common:22};
-         let tokens=100,pendingPack={name:"",cost:0},autoOpenMode=false,collectedCards=new Set(),allCardsUnlocked=false,currentUser=null,isCollectionView=false;
+         let tokens=100,pendingPack={name:"",cost:0},autoOpenMode=false,collectedCards=new Set(),allCardsUnlocked=false,isCollectionView=false;
          
-         function saveToStorage(key, value) {
-             try {
-                 localStorage.setItem(key, JSON.stringify(value));
-                 return true;
-             } catch(e) {
-                 console.warn('localStorage not available');
-                 return false;
-             }
-         }
-         
-         function getFromStorage(key) {
-             try {
-                 const item = localStorage.getItem(key);
-                 return item ? JSON.parse(item) : null;
-             } catch(e) {
-                 return null;
-             }
-         }
-         
-         let userDatabase = getFromStorage('blecket_users') || {};
+         window.currentUser = null;
+         window.currentUserId = null;
          
          function showLogin(){document.getElementById('loginView').style.display='block';document.getElementById('signupView').style.display='none';document.getElementById('loginError').textContent='';document.getElementById('signupError').textContent=''}
          function showSignup(){document.getElementById('loginView').style.display='none';document.getElementById('signupView').style.display='block';document.getElementById('loginError').textContent='';document.getElementById('signupError').textContent=''}
          
          function updateProfilePicture(){
-             if(currentUser){
-                 const initial=currentUser.charAt(0).toUpperCase();
+             if(window.currentUser){
+                 const initial=window.currentUser.charAt(0).toUpperCase();
                  document.getElementById('profilePicture').textContent=initial;
                  document.getElementById('profilePicture').style.display='flex';
              }else{
@@ -943,15 +945,12 @@
          }
          
          function showProfilePopup(){
-             if(!currentUser)return;
-             const initial=currentUser.charAt(0).toUpperCase();
+             if(!window.currentUser)return;
+             const initial=window.currentUser.charAt(0).toUpperCase();
              document.getElementById('profileIconLarge').textContent=initial;
-             document.getElementById('profileUsername').textContent=currentUser;
+             document.getElementById('profileUsername').textContent=window.currentUser;
              document.getElementById('profileTokens').textContent=tokens;
              document.getElementById('profileCards').textContent=collectedCards.size;
-             document.getElementById('profileCreated').textContent=userDatabase[currentUser].createdDate||'Unknown';
-             
-             // Ensure logout button shows inside account profile details box
              document.getElementById('logoutBtn').style.display='block';
              document.getElementById('profileOverlay').classList.add('active');
          }
@@ -978,8 +977,10 @@
              }
          }
          
-         function handleSignup(){
+         // NEW FIREBASE SIGNUP
+         async function handleSignup() {
              let username=document.getElementById('signupUsername').value.trim();
+             let email = username.toLowerCase() + "@tokendb.com"; 
              let password=document.getElementById('signupPassword').value;
              let confirmPassword=document.getElementById('signupConfirmPassword').value;
              
@@ -991,57 +992,81 @@
                  document.getElementById('signupError').textContent='Passwords do not match';
                  return;
              }
-             if(userDatabase[username]){
-                 document.getElementById('signupError').textContent='Username already exists';
-                 return;
+             
+             try {
+                 const userCredential = await window.fbAuth.createUserWithEmailAndPassword(window.auth, email, password);
+                 window.currentUserId = userCredential.user.uid;
+         
+                 await window.fbDb.setDoc(window.fbDb.doc(window.db, "users", window.currentUserId), {
+                     username: username,
+                     tokens: 100,
+                     collected: [],
+                     createdDate: new Date().toLocaleDateString()
+                 });
+         
+                 window.currentUser=username;
+                 tokens=100;
+                 collectedCards=new Set();
+                 
+                 document.getElementById('authOverlay').classList.remove('active');
+                 updateProfilePicture();
+                 updateTokens();
+             } catch (error) {
+                 document.getElementById('signupError').textContent = 'Error: Username might already exist or password is too weak.';
              }
-             
-             userDatabase[username]={password:password,tokens:100,collected:[],createdDate:new Date().toLocaleDateString()};
-             saveToStorage('blecket_users', userDatabase);
-             saveToStorage('blecket_last_user', username);
-             
-             currentUser=username;
-             tokens=100;
-             collectedCards=new Set();
-             
-             document.getElementById('authOverlay').classList.remove('active');
-             updateProfilePicture();
-             updateTokens();
          }
          
-         function handleLogin(){
+         // NEW FIREBASE LOGIN
+         async function handleLogin() {
              let username=document.getElementById('loginUsername').value.trim();
+             let email = username.toLowerCase() + "@tokendb.com";
              let password=document.getElementById('loginPassword').value;
              
              if(!username||!password){
                  document.getElementById('loginError').textContent='Please fill all fields';
                  return;
              }
-             if(!userDatabase[username]||userDatabase[username].password!==password){
+             
+             try {
+                 const userCredential = await window.fbAuth.signInWithEmailAndPassword(window.auth, email, password);
+                 window.currentUserId = userCredential.user.uid;
+                 window.currentUser=username;
+                 
+                 await loadUserData();
+                 
+                 document.getElementById('authOverlay').classList.remove('active');
+                 updateProfilePicture();
+             } catch (error) {
                  document.getElementById('loginError').textContent='Invalid username or password';
-                 return;
              }
-             
-             currentUser=username;
-             saveToStorage('blecket_last_user', username);
-             loadUserData();
-             
-             document.getElementById('authOverlay').classList.remove('active');
-             updateProfilePicture();
          }
          
-         function saveUserData(){
-             if(!currentUser)return;
-             userDatabase[currentUser].tokens=tokens;
-             userDatabase[currentUser].collected=Array.from(collectedCards);
-             saveToStorage('blecket_users', userDatabase);
+         // NEW FIREBASE SAVE DATA
+         async function saveUserData() {
+             if(!window.currentUserId) return;
+             try {
+                 await window.fbDb.updateDoc(window.fbDb.doc(window.db, "users", window.currentUserId), {
+                     tokens: tokens,
+                     collected: Array.from(collectedCards)
+                 });
+             } catch (error) {
+                 console.error("Error saving to Firebase:", error);
+             }
          }
          
-         function loadUserData(){
-             if(userDatabase[currentUser]){
-                 tokens=userDatabase[currentUser].tokens||100;
-                 collectedCards=new Set(userDatabase[currentUser].collected||[]);
-                 updateTokens();
+         // NEW FIREBASE LOAD DATA
+         async function loadUserData() {
+             if(!window.currentUserId) return;
+             try {
+                 const docSnap = await window.fbDb.getDoc(window.fbDb.doc(window.db, "users", window.currentUserId));
+                 if (docSnap.exists()) {
+                     const data = docSnap.data();
+                     tokens = data.tokens || 100;
+                     collectedCards = new Set(data.collected || []);
+                     updateTokens();
+                 }
+             } catch (error) {
+                 console.error("Error loading from Firebase:", error);
              }
          }
          
@@ -1053,71 +1078,43 @@
              document.getElementById('logoutOverlay').classList.remove('active');
          }
          
-         function confirmResetAccount(){
-             document.getElementById('resetOverlay').classList.add('active');
-         }
-         
-         function closeResetConfirmation(){
-             document.getElementById('resetOverlay').classList.remove('active');
-         }
-         
-         function resetAccount(){
-             if(!currentUser)return;
-             tokens=100;
-             collectedCards=new Set();
-             allCardsUnlocked=false;
-             userDatabase[currentUser].tokens=100;
-             userDatabase[currentUser].collected=[];
-             saveToStorage('blecket_users', userDatabase);
-             updateTokens();
-             closeResetConfirmation();
-             closeProfilePopup();
-             document.getElementById('adminStatus').textContent='Account reset successfully!';
-         }
-         
-         /* Correctly forces redirection to the sign-in window upon logout closure */
-         function confirmLogout(){
+         // NEW FIREBASE LOGOUT
+         async function confirmLogout() {
              closeLogoutConfirmation();
              closeProfilePopup();
-             saveUserData();
-             saveToStorage('blecket_last_user', null);
-             currentUser=null;
+             await saveUserData();
+             
+             try {
+                 await window.fbAuth.signOut(window.auth);
+             } catch(e) {
+                 console.error("Logout error", e);
+             }
+             
+             window.currentUser=null;
+             window.currentUserId = null;
              tokens=100;
              collectedCards=new Set();
              allCardsUnlocked=false;
              isCollectionView=false;
              
-             // Wipe input field strings
              document.getElementById('loginUsername').value = "";
              document.getElementById('loginPassword').value = "";
              document.getElementById('signupUsername').value = "";
              document.getElementById('signupPassword').value = "";
              document.getElementById('signupConfirmPassword').value = "";
              
-             // Enforce absolute redirect presentation views
              document.getElementById('logoutBtn').style.display='none';
              document.getElementById('profilePicture').style.display='none';
              document.getElementById('marketView').style.display='grid';
              document.getElementById('collectionView').classList.remove('active');
              document.getElementById('collectionToggle').textContent='Collection';
              
-             // Reactivate underlying authentication modal overlay screens
              document.getElementById('authOverlay').classList.add('active');
              showLogin();
              updateTokens();
          }
          
-         window.addEventListener('load', function() {
-             const lastUser = getFromStorage('blecket_last_user');
-             if (lastUser && userDatabase[lastUser]) {
-                 currentUser = lastUser;
-                 loadUserData();
-                 document.getElementById('authOverlay').classList.remove('active');
-                 updateProfilePicture();
-             }
-         });
-         
-         function updateTokens(){document.getElementById('tokenCount').textContent=tokens;if(currentUser)saveUserData()}
+         function updateTokens(){document.getElementById('tokenCount').textContent=tokens;if(window.currentUser)saveUserData()}
          function toggleMode(){autoOpenMode=!autoOpenMode;const btn=document.getElementById('toggleBtn');btn.textContent=autoOpenMode?'Auto Open':'Confirm';btn.classList.toggle('auto-mode',autoOpenMode)}
          function handlePackClick(boxName,cost){if(tokens<cost)return;if(autoOpenMode){tokens-=cost;updateTokens();revealBlookPopup(boxName)}else{showConfirmation(boxName,cost)}}
          function getRandomCard(boxName){let cardsInPack=packBlocks[boxName]||packBlocks["Aquatic Pack"],pool=[];cardsInPack.forEach(card=>{for(let i=0;i<chances[card.rarity];i++)pool.push(card)});return pool[Math.floor(Math.random()*pool.length)]}
@@ -1133,8 +1130,22 @@
          function setTokens(){let amt=parseInt(document.getElementById('tokenInput').value,10);if(!isNaN(amt)&&amt>=0){tokens=amt;updateTokens();document.getElementById('adminStatus').textContent="Tokens set to "+amt+"!";document.getElementById('tokenInput').value=""}else{document.getElementById('adminStatus').textContent="Enter a valid number."}}
          function toggleAllCards(){if(allCardsUnlocked){collectedCards.clear();document.getElementById('unlockBtn').textContent="Unlock All Cards";document.getElementById('adminStatus').textContent="All cards locked!";allCardsUnlocked=false}else{for(let pack in packBlocks){packBlocks[pack].forEach(card=>{collectedCards.add(card.name)})}document.getElementById('unlockBtn').textContent="Lock All Cards";document.getElementById('adminStatus').textContent="All cards unlocked!";allCardsUnlocked=true}saveUserData()}
          document.addEventListener("keydown",function(e){if(document.activeElement.classList.contains("admin-btn")&&(e.key==="Enter"||e.key===" ")){showAdminPopup()}if(document.activeElement.classList.contains("pack-card")&&(e.key==="Enter"||e.key===" ")){document.activeElement.click()}});
+         
+         // Initialize
          updateTokens();
-     let packHoldTimer=null,isHoldingPack=false;const HOLD_DURATION=1000;function calculatePackChances(e){const t=packBlocks[e];if(!t)return null;const o={},a=t.length;t.forEach(e=>{const t=e.rarity;o[t]=(o[t]||0)+1});const n={};for(let e in o)n[e]=(o[e]/a*100).toFixed(2);return n}function showPackTooltip(e,t){const o=document.getElementById("packTooltip"),a=document.getElementById("tooltipTitle"),n=document.getElementById("tooltipContent"),l=calculatePackChances(t);if(!l)return;a.textContent=t+" Chances";const i=Object.entries(l).sort((e,t)=>parseFloat(t[1])-parseFloat(e[1]));let r="";i.forEach(([e,t])=>{r+=`<div class="tooltip-item"><span class="tooltip-rarity ${e}">${e}</span><span class="tooltip-percent">${t}%</span></div>`}),n.innerHTML=r;const c=e.target.closest(".pack-card");if(c){const e=c.getBoundingClientRect();o.style.left=e.right+20+"px",o.style.top=e.top+"px"}o.classList.add("show"),isHoldingPack=!0}function hidePackTooltip(){document.getElementById("packTooltip").classList.remove("show")}function initPackTooltips(){document.querySelectorAll(".pack-card").forEach(e=>{const t=e.getAttribute("onclick"),o=t?t.match(/'([^']+)'/):null,a=o?o[1]:null;a&&(e.addEventListener("mousedown",e=>{isHoldingPack=!1,packHoldTimer=setTimeout(()=>{showPackTooltip(e,a)},HOLD_DURATION)}),e.addEventListener("mouseup",t=>{clearTimeout(packHoldTimer),isHoldingPack||eval(e.getAttribute("onclick")),isHoldingPack=!1,hidePackTooltip()}),e.addEventListener("mouseleave",()=>{clearTimeout(packHoldTimer),hidePackTooltip(),isHoldingPack=!1}),e.addEventListener("touchstart",e=>{isHoldingPack=!1,packHoldTimer=setTimeout(()=>{showPackTooltip(e.touches[0],a)},HOLD_DURATION)}),e.addEventListener("touchend",t=>{clearTimeout(packHoldTimer),isHoldingPack||eval(e.getAttribute("onclick")),isHoldingPack=!1,hidePackTooltip()}))})}function checkDailyReward(){if(!currentUser)return;const e="lastDailyReward_"+currentUser,t=localStorage.getItem(e),o=new Date,a=new Date(o);if(a.setHours(0,0,0,0),!t)return void giveDailyReward();const n=new Date(parseInt(t)),l=new Date(n);l.setHours(0,0,0,0),a>l&&giveDailyReward()}function giveDailyReward(){tokens+=100,updateTokens(),saveUserData(),localStorage.setItem("lastDailyReward_"+currentUser,Date.now().toString()),showDailyRewardPopup()}function showDailyRewardPopup(){const e=document.getElementById("dailyRewardOverlay"),t=document.getElementById("dailyRewardPopup");e.classList.add("show"),t.classList.add("show"),setTimeout(()=>{e.classList.remove("show"),t.classList.remove("show")},3e3),e.onclick=()=>{e.classList.remove("show"),t.classList.remove("show")}}window.addEventListener("DOMContentLoaded",()=>{setTimeout(()=>{initPackTooltips(),currentUser&&(checkDailyReward(),setInterval(checkDailyReward,6e4))},500)});
+         
+         let packHoldTimer=null,isHoldingPack=false;const HOLD_DURATION=1000;
+         function calculatePackChances(e){const t=packBlocks[e];if(!t)return null;const o={},a=t.length;t.forEach(e=>{const t=e.rarity;o[t]=(o[t]||0)+1});const n={};for(let e in o)n[e]=(o[e]/a*100).toFixed(2);return n}
+         function showPackTooltip(e,t){const o=document.getElementById("packTooltip"),a=document.getElementById("tooltipTitle"),n=document.getElementById("tooltipContent"),l=calculatePackChances(t);if(!l)return;a.textContent=t+" Chances";const i=Object.entries(l).sort((e,t)=>parseFloat(t[1])-parseFloat(e[1]));let r="";i.forEach(([e,t])=>{r+=`<div class="tooltip-item"><span class="tooltip-rarity ${e}">${e}</span><span class="tooltip-percent">${t}%</span></div>`}),n.innerHTML=r;const c=e.target.closest(".pack-card");if(c){const e=c.getBoundingClientRect();o.style.left=e.right+20+"px",o.style.top=e.top+"px"}o.classList.add("show"),isHoldingPack=!0}
+         function hidePackTooltip(){document.getElementById("packTooltip").classList.remove("show")}
+         function initPackTooltips(){document.querySelectorAll(".pack-card").forEach(e=>{const t=e.getAttribute("onclick"),o=t?t.match(/'([^']+)'/):null,a=o?o[1]:null;a&&(e.addEventListener("mousedown",e=>{isHoldingPack=!1,packHoldTimer=setTimeout(()=>{showPackTooltip(e,a)},HOLD_DURATION)}),e.addEventListener("mouseup",t=>{clearTimeout(packHoldTimer),isHoldingPack||eval(e.getAttribute("onclick")),isHoldingPack=!1,hidePackTooltip()}),e.addEventListener("mouseleave",()=>{clearTimeout(packHoldTimer),hidePackTooltip(),isHoldingPack=!1}),e.addEventListener("touchstart",e=>{isHoldingPack=!1,packHoldTimer=setTimeout(()=>{showPackTooltip(e.touches[0],a)},HOLD_DURATION)}),e.addEventListener("touchend",t=>{clearTimeout(packHoldTimer),isHoldingPack||eval(e.getAttribute("onclick")),isHoldingPack=!1,hidePackTooltip()}))})}
+         
+         // Note: Using localStorage here just for the daily reward cooldown
+         function checkDailyReward(){if(!window.currentUser)return;const e="lastDailyReward_"+window.currentUser,t=localStorage.getItem(e),o=new Date,a=new Date(o);if(a.setHours(0,0,0,0),!t)return void giveDailyReward();const n=new Date(parseInt(t)),l=new Date(n);l.setHours(0,0,0,0),a>l&&giveDailyReward()}
+         function giveDailyReward(){tokens+=100,updateTokens(),saveUserData(),localStorage.setItem("lastDailyReward_"+window.currentUser,Date.now().toString()),showDailyRewardPopup()}
+         function showDailyRewardPopup(){const e=document.getElementById("dailyRewardOverlay"),t=document.getElementById("dailyRewardPopup");e.classList.add("show"),t.classList.add("show"),setTimeout(()=>{e.classList.remove("show"),t.classList.remove("show")},3e3),e.onclick=()=>{e.classList.remove("show"),t.classList.remove("show")}}
+         
+         window.addEventListener("DOMContentLoaded",()=>{setTimeout(()=>{initPackTooltips(),window.currentUser&&(checkDailyReward(),setInterval(checkDailyReward,6e4))},500)});
      </script>
  
      <div class="pack-tooltip" id="packTooltip"><div class="tooltip-title" id="tooltipTitle">Pack Chances</div><div id="tooltipContent"></div></div>
